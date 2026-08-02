@@ -1,0 +1,192 @@
+voiceflow-ai/
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── authApi.js
+│   │   │   ├── companyApi.js
+│   │   │   ├── conversationApi.js
+│   │   │   └── voiceApi.js
+│   │   │
+│   │   ├── components/
+│   │   │   ├── common/
+│   │   │   ├── dashboard/
+│   │   │   ├── chat/
+│   │   │   └── voice/
+│   │   │
+│   │   ├── pages/
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── RegisterPage.jsx
+│   │   │   ├── DashboardPage.jsx
+│   │   │   ├── CompanyPage.jsx
+│   │   │   ├── KnowledgeBasePage.jsx
+│   │   │   ├── ConversationPage.jsx
+│   │   │   └── EscalationPage.jsx
+│   │   │
+│   │   ├── context/
+│   │   ├── hooks/
+│   │   ├── routes/
+│   │   ├── utils/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   │
+│   ├── package.json
+│   ├── vite.config.js
+│   └── Dockerfile
+│
+├── java-backend/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   │   └── com/
+│   │   │   │       └── voiceflow/
+│   │   │   │           └── backend/
+│   │   │   │               ├── VoiceFlowApplication.java
+│   │   │   │               │
+│   │   │   │               ├── auth/
+│   │   │   │               │   ├── controller/
+│   │   │   │               │   ├── service/
+│   │   │   │               │   ├── dto/
+│   │   │   │               │   └── security/
+│   │   │   │               │
+│   │   │   │               ├── user/
+│   │   │   │               │   ├── controller/
+│   │   │   │               │   ├── service/
+│   │   │   │               │   ├── repository/
+│   │   │   │               │   ├── entity/
+│   │   │   │               │   └── dto/
+│   │   │   │               │
+│   │   │   │               ├── company/
+│   │   │   │               ├── customer/
+│   │   │   │               ├── conversation/
+│   │   │   │               ├── booking/
+│   │   │   │               ├── order/
+│   │   │   │               ├── complaint/
+│   │   │   │               ├── escalation/
+│   │   │   │               ├── document/
+│   │   │   │               ├── aiintegration/
+│   │   │   │               ├── notification/
+│   │   │   │               │
+│   │   │   │               ├── common/
+│   │   │   │               │   ├── config/
+│   │   │   │               │   ├── exception/
+│   │   │   │               │   ├── response/
+│   │   │   │               │   ├── mapper/
+│   │   │   │               │   └── util/
+│   │   │   │               │
+│   │   │   │               └── health/
+│   │   │   │
+│   │   │   └── resources/
+│   │   │       ├── application.yml
+│   │   │       ├── application-dev.yml
+│   │   │       ├── application-prod.yml
+│   │   │       └── db/
+│   │   │           └── migration/
+│   │   │               ├── V1__create_users.sql
+│   │   │               ├── V2__create_companies.sql
+│   │   │               ├── V3__create_customers.sql
+│   │   │               └── V4__create_conversations.sql
+│   │   │
+│   │   └── test/
+│   │       └── java/
+│   │           └── com/
+│   │               └── voiceflow/
+│   │                   └── backend/
+│   │                       ├── auth/
+│   │                       ├── company/
+│   │                       ├── conversation/
+│   │                       └── integration/
+│   │
+│   ├── pom.xml
+│   ├── Dockerfile
+│   └── README.md
+│
+├── python-ai-service/
+│   ├── app/
+│   │   ├── main.py
+│   │   │
+│   │   ├── api/
+│   │   │   ├── chat_routes.py
+│   │   │   ├── agent_routes.py
+│   │   │   ├── rag_routes.py
+│   │   │   ├── document_routes.py
+│   │   │   └── speech_routes.py
+│   │   │
+│   │   ├── agents/
+│   │   │   ├── manager_agent.py
+│   │   │   ├── faq_agent.py
+│   │   │   ├── booking_agent.py
+│   │   │   ├── order_agent.py
+│   │   │   ├── complaint_agent.py
+│   │   │   ├── recommendation_agent.py
+│   │   │   └── escalation_agent.py
+│   │   │
+│   │   ├── orchestration/
+│   │   │   ├── graph.py
+│   │   │   ├── router.py
+│   │   │   ├── state.py
+│   │   │   └── workflows.py
+│   │   │
+│   │   ├── rag/
+│   │   │   ├── loader.py
+│   │   │   ├── parser.py
+│   │   │   ├── chunker.py
+│   │   │   ├── embeddings.py
+│   │   │   ├── vector_store.py
+│   │   │   └── retriever.py
+│   │   │
+│   │   ├── speech/
+│   │   │   ├── stt_service.py
+│   │   │   ├── tts_service.py
+│   │   │   └── audio_processor.py
+│   │   │
+│   │   ├── llm/
+│   │   │   ├── client.py
+│   │   │   ├── prompts.py
+│   │   │   └── response_parser.py
+│   │   │
+│   │   ├── integrations/
+│   │   │   └── java_backend_client.py
+│   │   │
+│   │   ├── models/
+│   │   │   ├── requests.py
+│   │   │   ├── responses.py
+│   │   │   └── agent_state.py
+│   │   │
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   ├── security.py
+│   │   │   ├── logging.py
+│   │   │   └── exceptions.py
+│   │   │
+│   │   └── tests/
+│   │       ├── test_agents.py
+│   │       ├── test_rag.py
+│   │       └── test_speech.py
+│   │
+│   ├── requirements.txt
+│   ├── .env.example
+│   ├── Dockerfile
+│   └── README.md
+│
+├── infrastructure/
+│   ├── nginx/
+│   │   └── nginx.conf
+│   ├── postgres/
+│   │   └── init.sql
+│   ├── monitoring/
+│   └── github-actions/
+│
+├── docs/
+│   ├── architecture-diagram.png
+│   ├── database-erd.png
+│   ├── api-contracts.md
+│   ├── team-responsibilities.md
+│   └── setup-guide.md
+│
+├── docker-compose.yml
+├── .env.example
+├── .gitignore
+└── README.md 
+

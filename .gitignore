@@ -21,6 +21,7 @@ out/
 # Java / Maven
 ############################################
 target/
+**/target/
 *.class
 *.jar
 *.war
@@ -38,8 +39,12 @@ logs/
 # Node.js / React
 ############################################
 node_modules/
+**/node_modules/
 dist/
+**/dist/
 build/
+.vite/
+.cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -48,6 +53,7 @@ yarn-error.log*
 # Python
 ############################################
 __pycache__/
+/**/__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
@@ -55,13 +61,18 @@ __pycache__/
 venv/
 env/
 ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
 
 ############################################
 # Environment Variables
 ############################################
 .env
 .env.*
-!.env.example
+.env.local
+!**/.env.example
 
 ############################################
 # Operating System Files
@@ -69,6 +80,7 @@ ENV/
 .DS_Store
 Thumbs.db
 desktop.ini
+ehthumbs.db
 
 ############################################
 # Docker
