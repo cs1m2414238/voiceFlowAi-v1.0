@@ -188,5 +188,4 @@ voiceflow-ai/
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
-└── README.md 
-
+└── README.md
