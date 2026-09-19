@@ -3,11 +3,13 @@ package com.voiceflow.javabackend.company.entity;
 import com.voiceflow.javabackend.company.enums.IndustryType;
 import jakarta.persistence.*; // For jpa contains all annotations related to database
 import lombok.*;  // for writing getter setter
+import org.springframework.stereotype.Component;
+
 import java.util.UUID;  // to generate a unique sr no for company
 import java.time.LocalDateTime; // used for creation at a time
 
 // for postgres
-@Entity   // create a table for each company
+@Entity // tells JPA/Hibernate that this class represents a database entity
 @Table(name = "companies") /*  by default Hibernate creates company */
 // lombok features
 @Getter
@@ -30,6 +32,7 @@ IndustryType industryType,
 .supportEmail("support@amazon.com")
 .build();*/
 
+
 public class Company {
 
     @Id //Every database table needs a primary key. it tells hibernate this field uniquely identifies a company.
@@ -50,8 +53,10 @@ public class Company {
     @Column(length = 20)
     private String supportPhone;
 
-    @Column(nullable = false)  // this means NOT NULL In sql
-    private boolean active = true;
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean active = true;  // this means NOT NULL In sql
+
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // time at creation/registration  of table for a company
