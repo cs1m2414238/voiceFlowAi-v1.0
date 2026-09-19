@@ -1,4 +1,4 @@
 package com.voiceflow.javabackend.company.service;
 
-public class CompanyServiceImpl implements CompanyService {
+public class CompanyServiceImpl {
 }
