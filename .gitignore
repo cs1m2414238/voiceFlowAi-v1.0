@@ -122,3 +122,5 @@ htmlcov/
 ############################################
 *.out
 *.err
+# ChromaDB generated vector stores
+**/chroma_*
