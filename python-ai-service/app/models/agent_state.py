@@ -12,3 +12,4 @@ class AgentChatResponse(BaseModel):
     intent: str
     confidence: float
     escalated: bool
+    ticket_id: str | None = None

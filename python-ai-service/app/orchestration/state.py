@@ -9,3 +9,4 @@ class AgentState(TypedDict, total=False):
     confidence: float
     answer: str
     escalated: bool
+    ticket_id: str

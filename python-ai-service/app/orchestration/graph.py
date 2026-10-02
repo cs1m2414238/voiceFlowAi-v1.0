@@ -3,7 +3,16 @@ from langgraph.graph import StateGraph, START, END
 from app.orchestration.state import AgentState
 from app.agents.manager_agent import manager_agent
 from app.agents.faq_agent import faq_agent
+from app.agents.complaint_agent import complaint_agent
 
+
+def complaint_node(state: AgentState):
+    result = complaint_agent(state["question"], state.get("company_id", "default"))
+    return {
+        "answer": result["answer"],
+        "escalated": result["escalated"],
+        "ticket_id": result["ticket_id"],
+    }
 CONFIDENCE_THRESHOLD = 0.5
 SPECIALISTS = ["faq", "booking", "order", "complaint", "recommendation"]
 
@@ -41,10 +50,9 @@ def build_graph():
     g = StateGraph(AgentState)
 
     g.add_node("manager", manager_node)
-    g.add_node("faq", faq_node)
+    real_nodes = {"faq": faq_node, "complaint": complaint_node}
     for name in SPECIALISTS:
-        if name != "faq":
-            g.add_node(name, placeholder_node(name))
+        g.add_node(name, real_nodes.get(name) or placeholder_node(name))
     g.add_node("escalation", escalation_node)
 
     g.add_edge(START, "manager")
