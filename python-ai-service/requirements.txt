@@ -9,6 +9,8 @@ langchain-text-splitters
 chromadb
 sentence-transformers
 pypdf
+langgraph
 pytest
 httpx
 python-multipart
+
