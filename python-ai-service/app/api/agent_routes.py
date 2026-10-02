@@ -13,10 +13,12 @@ def agent_chat(request: AgentChatRequest):
         "company_id": request.company_id,
         "session_id": request.session_id,
     })
+    print("[route] graph result:", result)
     return AgentChatResponse(
         answer=result["answer"],
         intent=result["intent"],
         confidence=result["confidence"],
         escalated=result["escalated"],
         ticket_id=result.get("ticket_id"),
+        booking_id=result.get("booking_id"),        
     )
