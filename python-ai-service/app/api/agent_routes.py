@@ -18,4 +18,5 @@ def agent_chat(request: AgentChatRequest):
         intent=result["intent"],
         confidence=result["confidence"],
         escalated=result["escalated"],
+        ticket_id=result.get("ticket_id"),
     )
