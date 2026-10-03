@@ -13,3 +13,4 @@ class AgentChatResponse(BaseModel):
     confidence: float
     escalated: bool
     ticket_id: str | None = None
+    booking_id: str | None = None
