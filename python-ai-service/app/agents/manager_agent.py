@@ -45,8 +45,10 @@ Customer message: {question}
 
 def manager_agent(question: str) -> dict:
     """Detect the customer's intent. Falls back to 'human' if unsure."""
-    llm = get_llm()
-    raw = llm.invoke(create_intent_prompt(question)).content
+    try:
+        raw = get_llm().invoke(create_intent_prompt(question)).content
+    except Exception:
+        return {"intent": "human", "confidence": 0.0}
 
     try:
         start, end = raw.find("{"), raw.rfind("}") + 1

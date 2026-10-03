@@ -1,11 +1,30 @@
 import json
+import logging
+import re
 
 from app.llm.client import get_llm
 from app.tools.tickets import create_ticket
 
+logger = logging.getLogger(__name__)
+
 CATEGORIES = ["service", "product", "billing", "delivery", "other"]
 SEVERITIES = ["low", "medium", "high"]
-HIGH_RISK_WORDS = ["legal", "lawyer", "fraud", "unsafe", "police", "sue", "scam"]
+
+HIGH_RISK_PATTERN = re.compile(
+    r"\b(legal|lawyer|attorney|fraud|fraudulent|unsafe|police|sue|sued|scam|scammed)\b"
+)
+NEGATIONS = {"not", "no", "never", "without"}
+
+
+def _has_high_risk(text: str) -> bool:
+    """Whole-word match, skipping a keyword if a negation is just before it."""
+    text = text.lower().replace("’", "'")
+    for match in HIGH_RISK_PATTERN.finditer(text):
+        previous = re.findall(r"[\w']+", text[:match.start()])[-3:]
+        negated = any(w in NEGATIONS or w.endswith("n't") for w in previous)
+        if not negated:
+            return True
+    return False
 
 
 def _analysis_prompt(question: str) -> str:
@@ -26,7 +45,9 @@ def _analyse(question: str) -> dict:
     try:
         raw = get_llm().invoke(_analysis_prompt(question)).content
         data = json.loads(raw[raw.find("{"): raw.rfind("}") + 1])
-    except (ValueError, TypeError):
+    except Exception:
+        # Ollama down, timeout, bad JSON... the complaint must still be logged.
+        logger.exception("Complaint analysis failed, using default values")
         return defaults
 
     category = data.get("category", "other")
@@ -41,16 +62,25 @@ def _analyse(question: str) -> dict:
 def complaint_agent(question: str, company_id: str = "default") -> dict:
     info = _analyse(question)
 
-    # Safety net: a small model can miss serious cases, so check keywords too.
-    if any(word in question.lower() for word in HIGH_RISK_WORDS):
+    if _has_high_risk(question):
         info["severity"] = "high"
 
-    ticket = create_ticket(
-        company_id=company_id,
-        category=info["category"],
-        description=info["summary"],
-        severity=info["severity"],
-    )
+    try:
+        ticket = create_ticket(
+            company_id=company_id,
+            category=info["category"],
+            description=info["summary"],
+            severity=info["severity"],
+        )
+    except Exception:
+        logger.exception("Ticket creation failed for company %s", company_id)
+        return {
+            "answer": ("I'm sorry, I couldn't log your complaint just now. "
+                       "I'm connecting you with a human representative so it isn't lost."),
+            "escalated": True,
+            "ticket_id": None,
+        }
+
     print(f"[complaint] {ticket['ticket_id']} {info['category']}/{info['severity']}")
 
     escalate = info["severity"] == "high"
