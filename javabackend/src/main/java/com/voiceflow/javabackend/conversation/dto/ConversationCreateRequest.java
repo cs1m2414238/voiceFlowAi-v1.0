@@ -1,4 +1,12 @@
 package com.voiceflow.javabackend.conversation.dto;
 
-public class ConversationCreateRequest {
+import com.voiceflow.javabackend.common.enums.ConversationChannel;
+
+import java.util.UUID;
+
+public record ConversationCreateRequest(
+        UUID companyId,
+        UUID customerId,
+        ConversationChannel channel
+) {
 }

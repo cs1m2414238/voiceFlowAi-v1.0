@@ -1,0 +1,18 @@
+# Voice AI Module Dependencies (STT & TTS)
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic-settings>=2.2.0
+python-multipart>=0.0.9
+
+# Speech-to-Text (STT)
+faster-whisper>=1.0.1
+
+# Text-to-Speech (TTS)
+edge-tts>=6.1.9
+gTTS>=2.5.1
+requests>=2.31.0
+
+# Optional Audio Utilities
+pydub>=0.25.1
+soundfile>=0.12.1
+python-dotenv>=1.0.1

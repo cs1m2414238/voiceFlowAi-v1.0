@@ -1,4 +1,10 @@
 package com.voiceflow.javabackend.conversation.dto;
 
-public class MessageRequest {
+import jakarta.validation.constraints.NotBlank;
+
+public record MessageRequest(
+        @NotBlank(message = "Message content is required")
+        String content,
+        String sender
+) {
 }

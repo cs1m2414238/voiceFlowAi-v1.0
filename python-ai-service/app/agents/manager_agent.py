@@ -57,7 +57,7 @@ def manager_agent(question: str) -> dict:
         data = json.loads(raw[start:end])
         intent = data.get("intent", "human")
         confidence = float(data.get("confidence", 0.0))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, AttributeError):
         return {"intent": "human", "confidence": 0.0}
 
     if intent not in VALID_INTENTS:
