@@ -7,10 +7,14 @@ from app.agents.faq_agent import faq_agent
 from app.agents.complaint_agent import complaint_agent
 from app.agents.booking_agent import booking_agent
 from app.tools.bookings import ACTIVE
+from app.agents.recommendation_agent import recommendation_agent
 
 CONFIDENCE_THRESHOLD = 0.5
 SPECIALISTS = ["faq", "booking", "order", "complaint", "recommendation"]
 
+def recommendation_node(state: AgentState):
+    r = recommendation_agent(state["question"], state.get("company_id", "default"))
+    return {"answer": r["answer"], "escalated": r["escalated"]}
 
 def manager_node(state: AgentState):
     result = manager_agent(state["question"])
@@ -91,7 +95,8 @@ def build_graph():
 
     g.add_node("manager", manager_node)
     real_nodes = {"faq": faq_node, "complaint": complaint_node,
-                  "booking": booking_node, "order": order_node}
+                  "booking": booking_node, "order": order_node,
+                  "recommendation": recommendation_node}
     for name in SPECIALISTS:
         g.add_node(name, real_nodes.get(name) or placeholder_node(name))
     g.add_node("escalation", escalation_node)
