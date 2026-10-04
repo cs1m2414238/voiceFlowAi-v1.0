@@ -6,6 +6,10 @@ from app.orchestration import graph as graph_module
 from app.orchestration.graph import route_after_manager
 from app.tools.bookings import ACTIVE
 
+def test_manager_handles_non_string_reply(monkeypatch):
+    fake = SimpleNamespace(invoke=lambda p: SimpleNamespace(content=["not", "text"]))
+    monkeypatch.setattr(manager_module, "get_llm", lambda: fake)
+    assert manager_module.manager_agent("hello")["intent"] == "human"
 
 def fake_llm(text):
     return SimpleNamespace(invoke=lambda prompt: SimpleNamespace(content=text))
