@@ -46,7 +46,7 @@ def test_route_complaint_returns_ticket(monkeypatch):
     assert body["ticket_id"] == "C-1001"
 
 def test_health_endpoint():
-    assert client.get("/health").json()["status"] == "UP"
+       assert client.get("/health").json()["status"] == "UP"
 
 def test_ticket_failure_through_real_graph_and_api(monkeypatch):
     from app.agents import complaint_agent as complaint_module

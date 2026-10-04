@@ -15,3 +15,7 @@ app.include_router(rag_router)
 app.include_router(chat_router)
 app.include_router(agent_router)
 app.include_router(document_router)
+
+@app.get("/health")
+def health():
+    return {"status": "UP", "service": "voiceflow-python-ai"}
