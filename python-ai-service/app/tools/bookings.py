@@ -1,9 +1,6 @@
 import itertools
 from datetime import datetime, timezone
 
-from app.core.config import settings
-from app.integrations.java_backend_client import java_client
-
 _counter = itertools.count(5001)
 _BOOKINGS = []
 
@@ -12,7 +9,7 @@ ACTIVE = {}
 
 
 def create_booking(company_id, date, time, party_size):
-    """Mock booking store with optional Java backend sync."""
+    """Mock booking store. Replace with a call to the Java backend later."""
     booking = {
         "booking_id": f"B-{next(_counter)}",
         "company_id": company_id,
@@ -23,8 +20,4 @@ def create_booking(company_id, date, time, party_size):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     _BOOKINGS.append(booking)
-
-    if settings.JAVA_SYNC_ENABLED:
-        java_client.sync_booking(booking)
-
     return booking
