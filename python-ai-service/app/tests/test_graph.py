@@ -65,3 +65,24 @@ def test_low_confidence_goes_to_escalation_node(monkeypatch):
 
     assert result["escalated"] is True
     assert "human" in result["answer"].lower()
+
+def test_ticket_failure_is_preserved_through_graph(monkeypatch):
+    monkeypatch.setattr(
+        graph_module, "manager_agent",
+        lambda q: {"intent": "complaint", "confidence": 0.9},
+    )
+    monkeypatch.setattr(
+        complaint_module, "_analyse",
+        lambda q: {"category": "service", "severity": "low", "summary": "Rude staff"},
+    )
+
+    def broken_create_ticket(**kwargs):
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(complaint_module, "create_ticket", broken_create_ticket)
+
+    result = graph_module.graph.invoke({"question": "The staff were rude"})
+
+    assert result["ticket_id"] is None
+    assert result["escalated"] is True
+    assert "human" in result["answer"].lower()
