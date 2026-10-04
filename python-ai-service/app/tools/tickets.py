@@ -19,12 +19,18 @@ def create_ticket(company_id, category, description, severity, customer_contact=
     Tickets and IDs are lost on restart unless synced to the Java backend's
     complaint module, which persists them in PostgreSQL.
     """
+    if not company_id or not str(company_id).strip():
+        raise ValueError("company_id is required")
     if category not in CATEGORIES:
         raise ValueError(f"Invalid category: {category!r}")
     if severity not in SEVERITIES:
         raise ValueError(f"Invalid severity: {severity!r}")
     if not description or not str(description).strip():
         raise ValueError("Description must not be empty")
+    if customer_contact is not None and (
+        not isinstance(customer_contact, str) or len(customer_contact) > 100
+    ):
+        raise ValueError("customer_contact must be a string of at most 100 characters")
 
     with _lock:
         ticket = {

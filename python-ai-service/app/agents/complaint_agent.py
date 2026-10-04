@@ -45,6 +45,8 @@ def _analyse(question: str) -> dict:
     try:
         raw = get_llm().invoke(_analysis_prompt(question)).content
         data = json.loads(raw[raw.find("{"): raw.rfind("}") + 1])
+        if not isinstance(data, dict):
+            raise ValueError("Model reply is not a JSON object")
     except Exception:
         # Ollama down, timeout, bad JSON... the complaint must still be logged.
         logger.exception("Complaint analysis failed, using default values")
