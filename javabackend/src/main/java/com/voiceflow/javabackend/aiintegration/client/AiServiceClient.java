@@ -4,6 +4,7 @@ import com.voiceflow.javabackend.aiintegration.config.AiServiceProperties;
 import com.voiceflow.javabackend.aiintegration.dto.AiChatRequest;
 import com.voiceflow.javabackend.aiintegration.dto.AiChatResponse;
 import com.voiceflow.javabackend.aiintegration.dto.AiHealthResponse;
+import com.voiceflow.javabackend.aiintegration.exception.AiServiceUnavailableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -33,7 +34,16 @@ public class AiServiceClient {
             if (response.getBody() != null) {
                 return response.getBody();
             }
+            if (!properties.isLocalFallbackEnabled()) {
+                throw new AiServiceUnavailableException("Python AI service returned an empty response from " + url);
+            }
+        } catch (AiServiceUnavailableException ex) {
+            throw ex;
         } catch (Exception ex) {
+            if (!properties.isLocalFallbackEnabled()) {
+                log.error("Python AI service unreachable at {}: {}", url, ex.getMessage());
+                throw new AiServiceUnavailableException("Python AI service is unavailable at " + url + ": " + ex.getMessage(), ex);
+            }
             log.warn("Python AI service unreachable at {}: {}. Using local fallback.", url, ex.getMessage());
         }
 
@@ -62,7 +72,16 @@ public class AiServiceClient {
             if (response.getBody() != null) {
                 return response.getBody();
             }
+            if (!properties.isLocalFallbackEnabled()) {
+                throw new AiServiceUnavailableException("Python AI document service returned an empty response from " + url);
+            }
+        } catch (AiServiceUnavailableException ex) {
+            throw ex;
         } catch (Exception ex) {
+            if (!properties.isLocalFallbackEnabled()) {
+                log.error("Python AI document upload unreachable at {}: {}", url, ex.getMessage());
+                throw new AiServiceUnavailableException("Python AI document service is unavailable at " + url + ": " + ex.getMessage(), ex);
+            }
             log.warn("Python AI document upload unreachable at {}: {}. Using fallback.", url, ex.getMessage());
         }
 
