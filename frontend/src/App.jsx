@@ -1,393 +1,267 @@
-import React, { useState, useRef } from 'react';
-import { uploadKnowledgeBase, saveAgentConfig } from './api/voiceApi';
+import React, { useState, useEffect } from 'react';
+import AgentSetupWizard from './components/AgentSetupWizard';
+import { authService, agentService, healthService } from './services/voiceApi';
 
 export default function App() {
-  const [step, setStep] = useState(1);
-  const [selectedTemplate, setSelectedTemplate] = useState('ecommerce');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [ragStats, setRagStats] = useState(null);
-  
-  // Model Parameters
-  const [prompt, setPrompt] = useState('You are a helpful, professional AI agent for VoiceFlow. Ground all responses in the provided knowledge base.');
-  const [voice, setVoice] = useState('Rachel');
-  const [temperature, setTemperature] = useState(0.7);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [activeTab, setActiveTab] = useState('wizard');
+  const [health, setHealth] = useState({ java: 'UNKNOWN', python: 'UNKNOWN' });
+  const [prompt, setPrompt] = useState('');
+  const [chatLog, setChatLog] = useState([]);
 
-  // Live Audio Sandbox State (Step 4)
-  const [isRecording, setIsRecording] = useState(false);
-  const [messages, setMessages] = useState([
-    { sender: 'agent', text: 'Hello! I am your configured AI Agent. Speak into your mic or type a message to test my knowledge base.' }
-  ]);
-  const [inputMsg, setInputMsg] = useState('');
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setIsLoggedIn(true);
+      setShowWelcome(false);
+    }
+  }, []);
 
-  const fileInputRef = useRef(null);
+  useEffect(() => {
+    if (isLoggedIn) {
+      healthService.checkBackendHealth().then(setHealth);
+    }
+  }, [isLoggedIn]);
 
-  const templates = [
-    { id: 'ecommerce', name: 'E-Commerce & Retail', icon: '🛍️', desc: 'Order tracking, returns, product FAQs' },
-    { id: 'healthcare', name: 'Healthcare & Medical', icon: '🩺', desc: 'Patient check-in, appointments, clinic info' },
-    { id: 'hotel', name: 'Hotels & Hospitality', icon: '🏨', desc: 'Reservations, room service, concierge' },
-    { id: 'banking', name: 'Banking & Finance', icon: '💳', desc: 'Account balance, card lock, fraud reports' },
-  ];
-
-  // Real RAG Integration using voiceApi
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploadedFile(file.name);
-    setIsUploading(true);
-
+  const handleLogin = async (e) => {
+    e.preventDefault();
     try {
-      // Calls your real python RAG backend API
-      const res = await uploadKnowledgeBase(file);
-      setRagStats({
-        chunks: res.chunks || 128,
-        dimensions: res.dimensions || 1536,
-        vectorStore: res.vectorStore || 'FAISS / ChromaDB',
-        status: 'Indexed Successfully'
-      });
+      await authService.login(username, password);
+      setIsLoggedIn(true);
+      setShowWelcome(false);
     } catch (err) {
-      // Fallback preview state if local backend is offline during testing
-      setRagStats({
-        chunks: 128,
-        dimensions: 1536,
-        vectorStore: 'FAISS / ChromaDB',
-        status: 'Indexed (Offline Mock)'
-      });
-    } finally {
-      setIsUploading(false);
+      alert(err.message);
     }
   };
 
-  const handleDeployAgent = async () => {
-    const configPayload = {
-      template: selectedTemplate,
-      documentName: uploadedFile,
-      promptDirectives: prompt,
-      voiceProfile: voice,
-      temperature: temperature
-    };
-
-    try {
-      await saveAgentConfig(configPayload);
-    } catch (e) {
-      console.log('Deploy payload ready:', configPayload);
-    }
-
-    setStep(4); // Open Live Interactive Sandbox
+  const handleLogout = () => {
+    authService.logout();
+    setIsLoggedIn(false);
+    setShowWelcome(true);
   };
 
-  const handleSendMessage = () => {
-    if (!inputMsg.trim()) return;
-    const newMsgs = [...messages, { sender: 'user', text: inputMsg }];
-    setMessages(newMsgs);
-    setInputMsg('');
-
-    setTimeout(() => {
-      setMessages([...newMsgs, { 
-        sender: 'agent', 
-        text: `[RAG Grounded Response]: Based on your uploaded knowledge base (${uploadedFile || 'Default KB'}), here is the generated response.` 
-      }]);
-    }, 800);
+  const handleSendPrompt = async () => {
+    if (!prompt) return;
+    const userMsg = prompt;
+    setChatLog((prev) => [...prev, { sender: 'Customer', text: userMsg }]);
+    setPrompt('');
+    const res = await agentService.sendPrompt(userMsg);
+    setChatLog((prev) => [...prev, { sender: 'AI Agent', text: res.response }]);
   };
 
+  // 1. WELCOME / LANDING PAGE
+  if (showWelcome && !isLoggedIn) {
+    return (
+      <div style={styles.welcomeContainer}>
+        <header style={styles.welcomeHeader}>
+          <h2 style={{ color: '#2563eb', margin: 0 }}>VoiceFlow AI</h2>
+          <button onClick={() => setShowWelcome(false)} style={styles.button}>
+            Portal Login
+          </button>
+        </header>
+
+        <main style={styles.heroSection}>
+          <span style={styles.badge}>Next-Gen AI Customer Automation</span>
+          <h1 style={styles.heroTitle}>Deploy Voice & AI Agents for Your Business</h1>
+          <p style={styles.heroSubtitle}>
+            Automate customer inquiries, streamline document verification, and deliver real-time intelligent voice assistance tailored to your enterprise.
+          </p>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <button onClick={() => setShowWelcome(false)} style={styles.heroPrimaryBtn}>
+              Get Started Now
+            </button>
+          </div>
+
+          <div style={styles.featureGrid}>
+            <div style={styles.featureCard}>
+              <h3 style={{ color: '#0f172a' }}>⚡ Instant Agent Setup</h3>
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                Configure and deploy customized booking, FAQ, and support agents in minutes.
+              </p>
+            </div>
+            <div style={styles.featureCard}>
+              <h3 style={{ color: '#0f172a' }}>📄 Smart RAG Verification</h3>
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                Upload business knowledge bases and documents for precise, grounded answers.
+              </p>
+            </div>
+            <div style={styles.featureCard}>
+              <h3 style={{ color: '#0f172a' }}>🎙️ Live Sandbox Testing</h3>
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                Test speech-to-text and chat capabilities in real-time before going live.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // 2. LOGIN PAGE
+  if (!isLoggedIn) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <button 
+            onClick={() => setShowWelcome(true)} 
+            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', float: 'left', fontSize: '0.85rem' }}
+          >
+            ← Back
+          </button>
+          <div style={{ clear: 'both' }}></div>
+          <h2 style={{ color: '#2563eb', marginBottom: '0.5rem', marginTop: '0.5rem' }}>VoiceFlow Business Portal</h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Sign in to configure your automated AI agent</p>
+          <form onSubmit={handleLogin} style={styles.form}>
+            <input
+              type="text"
+              placeholder="Business Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={styles.input}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={styles.input}
+              required
+            />
+            <button type="submit" style={styles.button}>Sign In</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. MAIN PORTAL DASHBOARD
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 font-sans antialiased">
-      {/* Top Navigation */}
-      <div className="max-w-6xl mx-auto flex items-center justify-between mb-8 pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20">
-            🎙️
-          </div>
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-              VoiceFlow AI Engine
-            </h1>
-            <p className="text-xs text-slate-400">Microservices Platform • Java Backend + Python AI Service</p>
-          </div>
+    <div style={styles.dashboard}>
+      <header style={styles.header}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>VoiceFlow AI Portal</h1>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Enterprise Agent Management</span>
         </div>
+        <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+      </header>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 hidden sm:inline">Branch: <code className="text-indigo-400">feature/frontend-setup</code></span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> APIs Connected
-          </span>
-        </div>
-      </div>
+      <nav style={styles.nav}>
+        <button
+          style={activeTab === 'wizard' ? styles.activeTab : styles.tab}
+          onClick={() => setActiveTab('wizard')}
+        >
+          Agent Setup & Onboarding
+        </button>
+        <button
+          style={activeTab === 'sandbox' ? styles.activeTab : styles.tab}
+          onClick={() => setActiveTab('sandbox')}
+        >
+          Live Voice & Chat Sandbox
+        </button>
+        <button
+          style={activeTab === 'health' ? styles.activeTab : styles.tab}
+          onClick={() => setActiveTab('health')}
+        >
+          System Telemetry
+        </button>
+      </nav>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Main Panel (Wizard or Sandbox) */}
-        <div className="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
-          
-          {/* STEP 1 - 3: Setup Wizard */}
-          {step <= 3 && (
-            <>
-              {/* Stepper Header */}
-              <div className="mb-8">
-                <div className="flex justify-between items-end mb-3">
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
-                      Step {step} of 3
-                    </span>
-                    <h2 className="text-2xl font-bold text-white mt-3">
-                      {step === 1 && "Select Domain Baseline"}
-                      {step === 2 && "Connect RAG Knowledge Base"}
-                      {step === 3 && "Model Parameters & Voice"}
-                    </h2>
+      <main style={styles.main}>
+        {activeTab === 'wizard' && (
+          <div style={{ background: '#ffffff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <AgentSetupWizard />
+          </div>
+        )}
+
+        {activeTab === 'sandbox' && (
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <h3 style={{ color: '#0f172a', marginTop: 0 }}>Test Your Configured Agent</h3>
+            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
+              Simulate customer interactions before going live to verify how your AI handles inquiries and document-based questions.
+            </p>
+            <div style={styles.chatBox}>
+              {chatLog.length === 0 ? (
+                <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: '4rem' }}>
+                  Send a message to test your AI workflow...
+                </p>
+              ) : (
+                chatLog.map((msg, i) => (
+                  <div key={i} style={{ marginBottom: '0.75rem' }}>
+                    <strong style={{ color: msg.sender === 'Customer' ? '#2563eb' : '#059669' }}>
+                      {msg.sender}:
+                    </strong>{' '}
+                    <span style={{ color: '#334155' }}>{msg.text}</span>
                   </div>
-                </div>
-
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full transition-all duration-500 ease-out"
-                    style={{ width: `${(step / 3) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Step 1 */}
-              {step === 1 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {templates.map((t) => (
-                    <div
-                      key={t.id}
-                      onClick={() => setSelectedTemplate(t.id)}
-                      className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
-                        selectedTemplate === t.id
-                          ? 'bg-indigo-600/10 border-indigo-500 shadow-lg shadow-indigo-500/10'
-                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">{t.icon}</div>
-                      <h3 className="font-semibold text-white text-sm">{t.name}</h3>
-                      <p className="text-xs text-slate-400 mt-1">{t.desc}</p>
-                    </div>
-                  ))}
-                </div>
+                ))
               )}
-
-              {/* Step 2 */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileUpload} 
-                    accept=".pdf,.docx,.txt" 
-                    className="hidden" 
-                  />
-                  <div 
-                    onClick={() => fileInputRef.current.click()}
-                    className="border-2 border-dashed border-slate-700 hover:border-indigo-500/50 rounded-xl p-8 text-center bg-slate-950/40 cursor-pointer transition"
-                  >
-                    <div className="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl border border-indigo-500/20">
-                      📄
-                    </div>
-                    <h4 className="text-sm font-semibold text-white mb-1">Click to Upload Document for Python RAG Pipeline</h4>
-                    <p className="text-xs text-slate-400">PDF, TXT, or DOCX up to 25MB</p>
-                  </div>
-
-                  {isUploading && (
-                    <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-indigo-300 animate-pulse">
-                      ⚡ Extracting text, generating embeddings, and storing in vector database...
-                    </div>
-                  )}
-
-                  {ragStats && (
-                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1">
-                      <p className="text-xs font-semibold text-emerald-400">✓ RAG Index Created for: {uploadedFile}</p>
-                      <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300 pt-2 border-t border-emerald-500/20">
-                        <div>Chunks: <span className="text-white font-mono">{ragStats.chunks}</span></div>
-                        <div>Vector Dim: <span className="text-white font-mono">{ragStats.dimensions}</span></div>
-                        <div>Vector DB: <span className="text-white font-mono">{ragStats.vectorStore}</span></div>
-                        <div>Status: <span className="text-emerald-400">{ragStats.status}</span></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step 3 */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">System Prompt Directives</label>
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 h-24 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Voice Profile (TTS Engine)</label>
-                      <select
-                        value={voice}
-                        onChange={(e) => setVoice(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="Rachel">Rachel - Warm & Professional</option>
-                        <option value="Adam">Adam - Deep & Natural</option>
-                        <option value="Sam">Sam - Expressive</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Temperature: {temperature}</label>
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="1" 
-                        step="0.1" 
-                        value={temperature}
-                        onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                        className="w-full mt-2 accent-indigo-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Navigation */}
-              <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-800">
-                <button
-                  onClick={() => setStep((s) => Math.max(1, s - 1))}
-                  disabled={step === 1}
-                  className="px-4 py-2 rounded-lg border border-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-800 disabled:opacity-30"
-                >
-                  Back
-                </button>
-
-                {step < 3 ? (
-                  <button
-                    onClick={() => setStep((s) => Math.min(3, s + 1))}
-                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/20"
-                  >
-                    Next Step →
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleDeployAgent}
-                    className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-emerald-500/20"
-                  >
-                    🚀 Deploy Agent & Open Sandbox
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* STEP 4: Live Audio Sandbox */}
-          {step === 4 && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-                <div>
-                  <h3 className="font-bold text-white text-base">Live Interactive Sandbox</h3>
-                  <p className="text-xs text-slate-400">Testing Voice Stream & RAG Retrieval</p>
-                </div>
-                <button 
-                  onClick={() => setStep(3)}
-                  className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-md"
-                >
-                  ⚙️ Reconfigure
-                </button>
-              </div>
-
-              <div className="p-6 bg-slate-950 rounded-xl border border-slate-800 text-center">
-                <div className="flex justify-center items-center gap-1.5 h-12 mb-3">
-                  {[40, 70, 30, 90, 60, 100, 50, 80, 40, 60].map((h, i) => (
-                    <div 
-                      key={i} 
-                      className={`w-1 bg-indigo-500 rounded-full transition-all duration-300 ${isRecording ? 'animate-pulse' : 'opacity-40'}`}
-                      style={{ height: isRecording ? `${h}%` : '20%' }}
-                    />
-                  ))}
-                </div>
-                
-                <button
-                  onClick={() => setIsRecording(!isRecording)}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold shadow-lg transition ${
-                    isRecording 
-                      ? 'bg-rose-600 text-white animate-pulse' 
-                      : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                  }`}
-                >
-                  {isRecording ? "🔴 Listening..." : "🎙️ Push to Talk"}
-                </button>
-              </div>
-
-              {/* Chat Feed */}
-              <div className="h-48 overflow-y-auto space-y-2 p-3 bg-slate-950/50 rounded-xl border border-slate-800/80 text-xs">
-                {messages.map((m, idx) => (
-                  <div key={idx} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] p-2.5 rounded-xl ${
-                      m.sender === 'user' 
-                        ? 'bg-indigo-600 text-white rounded-br-none' 
-                        : 'bg-slate-800 text-slate-200 rounded-bl-none'
-                    }`}>
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <input 
-                  type="text"
-                  value={inputMsg}
-                  onChange={(e) => setInputMsg(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message or use voice..."
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
-                <button 
-                  onClick={handleSendMessage}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold"
-                >
-                  Send
-                </button>
-              </div>
             </div>
-          )}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Ask your agent a question..."
+                style={styles.input}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendPrompt()}
+              />
+              <button onClick={handleSendPrompt} style={styles.button}>Send</button>
+            </div>
+          </div>
+        )}
 
-        </div>
-
-        {/* System Architecture Sidebar */}
-        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Connected API Services</h3>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 font-bold block">JAVA BACKEND</span>
-                <span className="text-slate-200 font-medium">companyApi.js / authApi.js</span>
+        {activeTab === 'health' && (
+          <div style={{ maxWidth: '600px', background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ color: '#0f172a', marginTop: 0 }}>System Telemetry & Backend Connections</h3>
+            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={styles.statusRow}>
+                <span style={{ fontWeight: '500', color: '#334155' }}>Java Core Backend (Port 8080)</span>
+                <span style={{ color: health.java === 'ONLINE' ? '#16a34a' : '#dc2626', fontWeight: 'bold' }}>
+                  ● {health.java}
+                </span>
               </div>
-
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 font-bold block">PYTHON RAG SERVICE</span>
-                <span className="text-indigo-400 font-medium">voiceApi.js (FastAPI / FAISS)</span>
-              </div>
-
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 font-bold block">CONVERSATION STREAM</span>
-                <span className="text-emerald-400 font-medium">conversationApi.js</span>
-              </div>
-
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 font-bold block">TTS ENGINE</span>
-                <span className="text-purple-400 font-medium">{voice} Profile</span>
+              <div style={styles.statusRow}>
+                <span style={{ fontWeight: '500', color: '#334155' }}>Python AI Service (Port 8000)</span>
+                <span style={{ color: health.python === 'ONLINE' ? '#16a34a' : '#dc2626', fontWeight: 'bold' }}>
+                  ● {health.python}
+                </span>
               </div>
             </div>
           </div>
-
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 text-center">
-            voiceFlowAi-v1.0 Architecture
-          </div>
-        </div>
-
-      </div>
+        )}
+      </main>
     </div>
   );
 }
+
+const styles = {
+  welcomeContainer: { minHeight: '100vh', background: '#f8fafc', color: '#0f172a', display: 'flex', flexDirection: 'column' },
+  welcomeHeader: { padding: '1.5rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', borderBottom: '1px solid #e2e8f0' },
+  heroSection: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4rem 2rem' },
+  badge: { background: '#eff6ff', color: '#2563eb', padding: '0.4rem 1rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: '600', border: '1px solid #bfdbfe', marginBottom: '1.5rem' },
+  heroTitle: { fontSize: '2.75rem', fontWeight: '800', color: '#0f172a', maxWidth: '750px', margin: '0 0 1rem 0', lineHeight: 1.2 },
+  heroSubtitle: { fontSize: '1.1rem', color: '#64748b', maxWidth: '600px', lineHeight: 1.6, margin: '0 0 1.5rem 0' },
+  heroPrimaryBtn: { padding: '0.9rem 2rem', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '1rem', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)' },
+  featureGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', maxWidth: '900px', width: '100%', marginTop: '4rem' },
+  featureCard: { background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'left', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  
+  container: { height: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' },
+  card: { background: '#ffffff', padding: '2.5rem', borderRadius: '12px', width: '350px', textAlign: 'center', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)', border: '1px solid #e2e8f0' },
+  form: { display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1.5rem' },
+  input: { padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', width: '100%', boxSizing: 'border-box', outline: 'none', fontSize: '0.95rem' },
+  button: { padding: '0.85rem 1.25rem', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.95rem', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' },
+  
+  dashboard: { minHeight: '100vh', background: '#f8fafc', color: '#0f172a', display: 'flex', flexDirection: 'column' },
+  header: { padding: '1.25rem 2.5rem', background: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' },
+  logoutBtn: { background: '#ef4444', color: '#ffffff', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' },
+  nav: { display: 'flex', background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0 2.5rem', gap: '0.5rem' },
+  tab: { background: 'none', border: 'none', color: '#64748b', padding: '1rem 1.5rem', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '500', transition: 'all 0.2s' },
+  activeTab: { background: '#f8fafc', border: 'none', color: '#2563eb', padding: '1rem 1.5rem', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '600', borderBottom: '3px solid #2563eb' },
+  main: { padding: '2.5rem', flex: 1 },
+  chatBox: { background: '#ffffff', padding: '1.5rem', height: '340px', overflowY: 'auto', borderRadius: '12px', marginBottom: '1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  statusRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }
+};
