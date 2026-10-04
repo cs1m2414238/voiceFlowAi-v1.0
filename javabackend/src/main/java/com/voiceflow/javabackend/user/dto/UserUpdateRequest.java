@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record UserUpdateRequest(
-
         @Size(max = 100)
         String userName,
 
@@ -20,6 +19,5 @@ public record UserUpdateRequest(
         Boolean active,
 
         UUID companyId
-
 ) {
 }

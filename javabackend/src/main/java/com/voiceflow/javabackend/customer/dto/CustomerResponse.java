@@ -1,4 +1,15 @@
 package com.voiceflow.javabackend.customer.dto;
 
-public class CustomerResponse {
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+public record CustomerResponse(
+        UUID id,
+        UUID companyId,
+        String name,
+        String email,
+        String phone,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
 }

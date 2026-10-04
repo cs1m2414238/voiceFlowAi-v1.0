@@ -2,9 +2,7 @@ package com.voiceflow.javabackend.user.entity;
 
 import com.voiceflow.javabackend.company.entity.Company;
 import com.voiceflow.javabackend.user.enums.UserRole;
-
 import jakarta.persistence.*;
-
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -37,7 +35,7 @@ public class User {
     private boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
+    @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
     @Enumerated(EnumType.STRING)

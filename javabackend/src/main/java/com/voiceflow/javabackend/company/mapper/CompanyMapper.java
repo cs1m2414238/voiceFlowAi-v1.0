@@ -29,8 +29,8 @@ public class CompanyMapper {
                 company.getIndustryType(),
                 company.getCreatedAt(),
                 company.getUpdatedAt(),
-                company.getSupportEmail(),
                 company.getSupportPhone(),
+                company.getSupportEmail(),
                 company.isActive()
         );
 

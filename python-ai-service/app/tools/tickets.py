@@ -2,6 +2,9 @@ import itertools
 import threading
 from datetime import datetime, timezone
 
+from app.core.config import settings
+from app.integrations.java_backend_client import java_client
+
 CATEGORIES = {"service", "product", "billing", "delivery", "other"}
 SEVERITIES = {"low", "medium", "high"}
 
@@ -11,11 +14,10 @@ _TICKETS = []
 
 
 def create_ticket(company_id, category, description, severity, customer_contact=None):
-    """Mock ticket store (in memory, single process).
+    """Mock ticket store (in memory, single process) with optional Java backend sync.
 
-    Tickets and IDs are lost on restart. To be replaced by a call to the
-    Java backend's complaint module, which will persist them in PostgreSQL
-    and generate the IDs.
+    Tickets and IDs are lost on restart unless synced to the Java backend's
+    complaint module, which persists them in PostgreSQL.
     """
     if category not in CATEGORIES:
         raise ValueError(f"Invalid category: {category!r}")
@@ -36,4 +38,8 @@ def create_ticket(company_id, category, description, severity, customer_contact=
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         _TICKETS.append(ticket)
+
+    if settings.JAVA_SYNC_ENABLED:
+        java_client.sync_ticket(ticket)
+
     return ticket

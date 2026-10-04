@@ -2,6 +2,9 @@ import itertools
 import threading
 from datetime import datetime, timezone
 
+from app.core.config import settings
+from app.integrations.java_backend_client import java_client
+
 # Mock data. Replace with calls to the Java backend's order module later.
 ORDERS = {
     "1001": {"item": "Wireless headphones", "status": "Shipped", "date": "5 Oct"},
@@ -18,11 +21,14 @@ _REQUESTS = []
 
 
 def get_order(order_id):
-    return ORDERS.get(order_id)
+    order = ORDERS.get(order_id)
+    if order is None and settings.JAVA_SYNC_ENABLED:
+        order = java_client.get_order(order_id)
+    return order
 
 
 def create_service_request(order_id, kind):
-    """Mock service request (cancellation or return)."""
+    """Mock service request (cancellation or return) with optional Java sync."""
     with _lock:
         request = {
             "request_id": f"R-{next(_counter)}",
@@ -32,4 +38,8 @@ def create_service_request(order_id, kind):
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         _REQUESTS.append(request)
+
+    if settings.JAVA_SYNC_ENABLED:
+        java_client.sync_order_request(request)
+
     return request
