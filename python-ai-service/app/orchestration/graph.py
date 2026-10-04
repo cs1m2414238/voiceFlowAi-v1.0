@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, START, END
-
+from app.agents.order_agent import order_agent
+from app.tools.orders import PENDING
 from app.orchestration.state import AgentState
 from app.agents.manager_agent import manager_agent
 from app.agents.faq_agent import faq_agent
@@ -56,10 +57,27 @@ def placeholder_node(name: str):
         return {"answer": f"The {name} agent is not built yet.", "escalated": False}
     return node
 
+def order_node(state: AgentState):
+    r = order_agent(
+        state["question"],
+        state.get("session_id", "default"),
+        state.get("company_id", "default"),
+    )
+    return {
+        "intent": "order",
+        "confidence": state.get("confidence", 1.0),
+        "answer": r["answer"],
+        "escalated": r["escalated"],
+    }
 
 def route_start(state: AgentState):
-    """If this session has a booking in progress, skip the Manager."""
-    return "booking" if state.get("session_id") in ACTIVE else "manager"
+    """Skip the Manager when this session is mid-booking or mid-order."""
+    session = state.get("session_id")
+    if session in ACTIVE:
+        return "booking"
+    if session in PENDING:
+        return "order"
+    return "manager"
 
 
 def route_after_manager(state: AgentState):
@@ -72,12 +90,16 @@ def build_graph():
     g = StateGraph(AgentState)
 
     g.add_node("manager", manager_node)
-    real_nodes = {"faq": faq_node, "complaint": complaint_node, "booking": booking_node}
+    real_nodes = {"faq": faq_node, "complaint": complaint_node,
+                  "booking": booking_node, "order": order_node}
     for name in SPECIALISTS:
         g.add_node(name, real_nodes.get(name) or placeholder_node(name))
     g.add_node("escalation", escalation_node)
 
-    g.add_conditional_edges(START, route_start, {"manager": "manager", "booking": "booking"})
+    g.add_conditional_edges(
+        START, route_start,
+        {"manager": "manager", "booking": "booking", "order": "order"},
+    )
     g.add_conditional_edges(
         "manager",
         route_after_manager,
