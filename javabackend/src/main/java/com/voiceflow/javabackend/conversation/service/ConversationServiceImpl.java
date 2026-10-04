@@ -21,6 +21,7 @@ import com.voiceflow.javabackend.conversation.repository.ConversationRepository;
 import com.voiceflow.javabackend.conversation.repository.MessageRepository;
 import com.voiceflow.javabackend.escalation.Escalation;
 import com.voiceflow.javabackend.escalation.EscalationRepository;
+import com.voiceflow.javabackend.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final EscalationRepository escalationRepository;
     private final ComplaintRepository complaintRepository;
     private final BookingRepository bookingRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -91,15 +93,17 @@ public class ConversationServiceImpl implements ConversationService {
         conversation.setDetectedIntent(aiResponse.getIntent());
         conversation.setLastConfidence(aiResponse.getConfidence());
         if (aiResponse.isEscalated()) {
+            String reason = "Escalated during " + aiResponse.getIntent() + " flow: " + request.content();
             conversation.setStatus(ConversationStatus.ESCALATED);
             escalationRepository.save(Escalation.builder()
                     .companyId(conversation.getCompanyId())
                     .conversationId(conversationId)
                     .ticketId(aiResponse.getTicketId())
-                    .reason("Escalated during " + aiResponse.getIntent() + " flow: " + request.content())
+                    .reason(reason)
                     .priority("HIGH")
                     .status("OPEN")
                     .build());
+            notificationService.notifyEscalation(conversation.getCompanyId(), conversationId, reason);
         } else if (conversation.getStatus() == ConversationStatus.ACTIVE) {
             conversation.setStatus(ConversationStatus.IN_PROGRESS);
         }
