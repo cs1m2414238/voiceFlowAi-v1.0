@@ -8,6 +8,7 @@ from app.agents.complaint_agent import complaint_agent
 from app.agents.booking_agent import booking_agent
 from app.tools.bookings import ACTIVE
 from app.agents.recommendation_agent import recommendation_agent
+from app.agents.escalation_agent import escalation_agent
 
 CONFIDENCE_THRESHOLD = 0.5
 SPECIALISTS = ["faq", "booking", "order", "complaint", "recommendation"]
@@ -50,11 +51,16 @@ def booking_node(state: AgentState):
 
 
 def escalation_node(state: AgentState):
+    r = escalation_agent(
+        question=state["question"],
+        company_id=state.get("company_id", "default"),
+        reason=f"Intent: {state.get('intent')} | Confidence: {state.get('confidence', 0.0)}",
+    )
     return {
-        "answer": "Let me connect you with a human support representative.",
-        "escalated": True,
+        "answer": r["answer"],
+        "escalated": r["escalated"],
+        "ticket_id": r.get("ticket_id"),
     }
-
 
 def placeholder_node(name: str):
     def node(state: AgentState):
