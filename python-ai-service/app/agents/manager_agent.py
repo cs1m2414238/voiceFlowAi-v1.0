@@ -27,6 +27,8 @@ Rule: if the customer is only asking for information, the intent is faq,
 NOT recommendation.
 
 Examples:
+"Which laptop should I buy for gaming?" -> {{"intent": "recommendation", "confidence": 0.9}}
+"What do you suggest for a birthday gift?" -> {{"intent": "recommendation", "confidence": 0.9}}
 "What technologies does the project use?" -> {{"intent": "faq", "confidence": 0.9}}
 "What are your opening hours?" -> {{"intent": "faq", "confidence": 0.9}}
 "Book a table for two on Friday" -> {{"intent": "booking", "confidence": 0.9}}

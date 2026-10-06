@@ -10,4 +10,4 @@ class AgentState(TypedDict, total=False):
     answer: str
     escalated: bool
     ticket_id: str | None
-    booking_id: str
+    booking_id: str | None
