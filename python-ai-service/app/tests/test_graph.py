@@ -86,3 +86,17 @@ def test_ticket_failure_is_preserved_through_graph(monkeypatch):
     assert result["ticket_id"] is None
     assert result["escalated"] is True
     assert "human" in result["answer"].lower()
+
+def test_escalation_node_is_defined_once():
+    import inspect
+    assert inspect.getsource(graph_module).count("def escalation_node") == 1
+
+
+def test_escalation_creates_a_ticket(monkeypatch):
+    monkeypatch.setattr(
+        graph_module, "manager_agent",
+        lambda q: {"intent": "human", "confidence": 0.9},
+    )
+    result = graph_module.graph.invoke({"question": "Let me talk to a person"})
+    assert result["escalated"] is True
+    assert result["ticket_id"].startswith("C-")
